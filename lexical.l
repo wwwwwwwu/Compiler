@@ -14,38 +14,39 @@ hexn	[0-9a-fA-F]
 %%
 {DELIM}+							{}
 \n								{}
-0|[1-9]{digit}*							{/*yylval=atoi(yytext)*/;	return INT;}
-0{octn}*							{int t;sscanf(yytext,"%o",&t);printf("oct %s %d \n",yytext,t);return INT;}
-0x{hexn}+							{int t;sscanf(yytext,"%x",&t);printf("hex %s %d \n",yytext,t);return INT;}
-(({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	{
-									printf("float %s %f \n",yytext,atof(yytext));
+0|[1-9]{digit}*							{yylval=init_syntax_node(yylineno,"INT","INT",atoi(yytext));	return INT;}
+0{octn}*							{int t;sscanf(yytext,"%o",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
+0x{hexn}+							{int t;sscanf(yytext,"%x",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
+(({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	
+								{printf("%f",atof(yytext))
+									yylval=init_syntax_floatnode(yylineno,"FLOAT",atof(yytext));
 									return FLOAT;
 								}
-;								{yylval=init_syntax_node(yylineno,"SEMI");	return SEMI;}
-,								{printf("COMMA \n");	return COMMA;}
-=								{printf("ASSIGNOP \n");	return ASSIGNOP;}
->|<|>=|<=|==|!=							{printf("RELOP \n");	return RELOP;}
-\+								{printf("PLUS \n");	return PLUS;}
--								{printf("MINUS \n");	return MINUS;}
-\*								{printf("STAR \n");	return STAR;}
-\/								{printf("DIV \n");	return DIV;}
-&&								{printf("AND \n");	return AND;}
-\|\|								{printf("OR \n");	return OR;}
-\.								{printf("DOT \n");	return DOT;}
-!								{printf("NOT \n");	return NOT;}
-"int"|"float"							{printf("TYPE \n");	return TYPE;}
-"("								{printf("LP \n");	return LP;}
-")"								{printf("RP \n");	return RP;}
-"["								{printf("LB \n");	return LB;}
-"]"								{printf("RB \n");	return RB;}
-"{"								{printf("LC \n");	return LC;}
-"}"								{printf("RC \n");	return RC;}
-struct								{printf("STRUCT \n");	return STRUCT;}
-return								{printf("RETURN \n");	return RETURN;}
-if								{printf("IF \n");	return IF;}
-else								{printf("ELSE \n");	return ELSE;}
-while								{printf("WHILE \n");	return WHILE;}
-{letter}({letter}|{digit})*					{printf("ID \n");	return ID;}
+;								{yylval=init_syntax_node(yylineno,"SEMI",NULL);	return SEMI;}
+,								{yylval=init_syntax_node(yylineno,"COMMA",NULL);	return COMMA;}
+=								{yylval=init_syntax_node(yylineno,"ASSIGNOP",NULL);	return ASSIGNOP;}
+>|<|>=|<=|==|!=							{yylval=init_syntax_node(yylineno,"RELOP",yytext);	return RELOP;}
+\+								{yylval=init_syntax_node(yylineno,"PLUS",NULL);	return PLUS;}
+-								{yylval=init_syntax_node(yylineno,"MINUS",NULL);	return MINUS;}
+\*								{yylval=init_syntax_node(yylineno,"STAR",NULL);	return STAR;}
+\/								{yylval=init_syntax_node(yylineno,"DIV",NULL);	return DIV;}
+&&								{yylval=init_syntax_node(yylineno,"AND",NULL);	return AND;}
+\|\|								{yylval=init_syntax_node(yylineno,"OR",NULL);	return OR;}
+\.								{yylval=init_syntax_node(yylineno,"DOT",NULL);	return DOT;}
+!								{yylval=init_syntax_node(yylineno,"NOT",NULL);	return NOT;}
+"int"|"float"							{yylval=init_syntax_node(yylineno,"TYPE",yytext);	return TYPE;}
+"("								{yylval=init_syntax_node(yylineno,"LP",NULL);	return LP;}
+")"								{yylval=init_syntax_node(yylineno,"RP",NULL);	return RP;}
+"["								{yylval=init_syntax_node(yylineno,"LB",NULL);	return LB;}
+"]"								{yylval=init_syntax_node(yylineno,"RB",NULL);	return RB;}
+"{"								{yylval=init_syntax_node(yylineno,"LC",NULL);	return LC;}
+"}"								{yylval=init_syntax_node(yylineno,"RC",NULL);	return RC;}
+struct								{yylval=init_syntax_node(yylineno,"STRUCT",NULL);	return STRUCT;}
+return								{yylval=init_syntax_node(yylineno,"RETURN",NULL);	return RETURN;}
+if								{yylval=init_syntax_node(yylineno,"IF",NULL);	return IF;}
+else								{yylval=init_syntax_node(yylineno,"ELSE",NULL);	return ELSE;}
+while								{yylval=init_syntax_node(yylineno,"WHILE",NULL);	return WHILE;}
+{letter}({letter}|{digit})*					{yylval=init_syntax_node(yylineno,"ID",NULL);	return ID;}
 .								{printf("Error type A at Line %d: Mysterious character '%s'\n",yylineno,yytext);}
 
 %%
