@@ -1,6 +1,7 @@
 %{
 	#include "lex.yy.c"
 	#include <stdio.h>
+	#include "include/syntaxtree.h"
 %}
 %token INT FLOAT ID
 %token SEMI COMMA TYPE STRUCT RETURN IF WHILE

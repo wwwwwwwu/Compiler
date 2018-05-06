@@ -1,7 +1,7 @@
 %{
-
-	#include "syntax.tab.h"
+	#include "include/syntaxtree.h"
 	#define YYSTYPE syntax_node*
+	#include "syntax.tab.h"
 %}
 
 digit	[0-9]
@@ -14,14 +14,14 @@ hexn	[0-9a-fA-F]
 %%
 {DELIM}+							{}
 \n								{}
-0|[1-9]{digit}*							{yylval=atoi(yytext);	return INT;}
+0|[1-9]{digit}*							{/*yylval=atoi(yytext)*/;	return INT;}
 0{octn}*							{int t;sscanf(yytext,"%o",&t);printf("oct %s %d \n",yytext,t);return INT;}
 0x{hexn}+							{int t;sscanf(yytext,"%x",&t);printf("hex %s %d \n",yytext,t);return INT;}
 (({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	{
 									printf("float %s %f \n",yytext,atof(yytext));
 									return FLOAT;
 								}
-;								{printf("SEMI \n");	return SEMI;}
+;								{yylval=init_syntax_node(yylineno,"SEMI");	return SEMI;}
 ,								{printf("COMMA \n");	return COMMA;}
 =								{printf("ASSIGNOP \n");	return ASSIGNOP;}
 >|<|>=|<=|==|!=							{printf("RELOP \n");	return RELOP;}
