@@ -1,3 +1,3 @@
 int main(){
-	float u=1234.5;
+	float i =1.1 ;
 }

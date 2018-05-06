@@ -42,19 +42,20 @@ syntax_node* init_syntax_node(int lineno,char symbol[],char* text,...) {
 		va_list valist;
 		va_start(valist,text);
 		p->int_val=va_arg(valist,int);
-		printf("int a %d",p->int_val);
+//		printf("int a %d",p->int_val);
 		va_end(valist);
-		printf("int b %d",p->int_val);
+//		printf("int b %d",p->int_val);
 	}
 	else if(text!=NULL){
 		strcpy(p->inf,text);
-		printf("%s\n",text);
+//		printf("%s\n",text);
 	}
 	
 	return p;
 }
 
 syntax_node* init_syntax_floatnode(int lineno,char symbol[],float value) {
+//	printf("2fffffffffffffffffffff\n");
 	syntax_node* p=malloc(sizeof(syntax_node));
 	strcpy(p->symbol,symbol);
 	p->lineno=lineno;
@@ -68,21 +69,30 @@ syntax_node* init_syntax_child_node(char symbol[],int nr_child,...) {
 	syntax_node* p=malloc(sizeof(syntax_node));
 	strcpy(p->symbol,symbol);
 	p->is_terminal=0;
+	p->nr_child=nr_child;
 	va_list ap;
 	va_start(ap,nr_child);
 	int i;
-	for (i=0;i<nr_child;i++)
+	if(nr_child==0)return p;
+	syntax_node* q=va_arg(ap,syntax_node*);
+	p->child[0]=q;
+	p->lineno=p->child[0]->lineno;
+	for (i=1;i<nr_child;i++)
 	{
-		syntax_node* q=va_arg(ap,syntax_node*);
+//		printf("child %d %d\n",i,nr_child);
+		q=va_arg(ap,syntax_node*);
 		p->child[i]=q;
+//		printf("lineon %d\n",p->child[i]->lineno);
 	}
 	return p;
 }
 
 void print_tree(syntax_node *p,int nr_blank,int noerror) {
+//	printf("print\n");
 	if (noerror==0)
 		return;
 	int i=0;
+//	printf("print %d %d\n",p->is_terminal,p->nr_child);
 	if (p->is_terminal==0&&p->nr_child==0)
 		return;
 	for (;i<nr_blank;i++)

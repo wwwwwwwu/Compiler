@@ -2,6 +2,8 @@
 	#include "include/syntaxtree.h"
 	#define YYSTYPE syntax_node*
 	#include "syntax.tab.h"
+	extern int noerror;
+
 %}
 
 digit	[0-9]
@@ -18,7 +20,7 @@ hexn	[0-9a-fA-F]
 0{octn}*							{int t;sscanf(yytext,"%o",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
 0x{hexn}+							{int t;sscanf(yytext,"%x",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
 (({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	
-								{printf("%f",atof(yytext))
+								{	printf("ffffffffffffff\n");
 									yylval=init_syntax_floatnode(yylineno,"FLOAT",atof(yytext));
 									return FLOAT;
 								}
@@ -46,8 +48,8 @@ return								{yylval=init_syntax_node(yylineno,"RETURN",NULL);	return RETURN;}
 if								{yylval=init_syntax_node(yylineno,"IF",NULL);	return IF;}
 else								{yylval=init_syntax_node(yylineno,"ELSE",NULL);	return ELSE;}
 while								{yylval=init_syntax_node(yylineno,"WHILE",NULL);	return WHILE;}
-{letter}({letter}|{digit})*					{yylval=init_syntax_node(yylineno,"ID",NULL);	return ID;}
-.								{printf("Error type A at Line %d: Mysterious character '%s'\n",yylineno,yytext);}
+{letter}({letter}|{digit})*					{yylval=init_syntax_node(yylineno,"ID",yytext);	return ID;}
+.								{noerror=0;printf("Error type A at Line %d: Mysterious character '%s'.\n",yylineno,yytext);}
 
 %%
 
