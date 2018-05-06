@@ -2,6 +2,7 @@
 	#include "include/syntaxtree.h"
 	#define YYSTYPE syntax_node*
 	#include "syntax.tab.h"
+	#include <stdio.h>
 	extern int noerror;
 
 %}
@@ -16,12 +17,12 @@ hexn	[0-9a-fA-F]
 %%
 {DELIM}+							{}
 \n								{}
-0|[1-9]{digit}*							{yylval=init_syntax_node(yylineno,"INT","INT",atoi(yytext));	return INT;}
+0|[1-9]{digit}*							{int t=atoi(yytext);yylval=init_syntax_node(yylineno,"INT","INT",t);	return INT;}
 0{octn}*							{int t;sscanf(yytext,"%o",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
 0x{hexn}+							{int t;sscanf(yytext,"%x",&t);yylval=init_syntax_node(yylineno,"INT","INT",t);return INT;}
-(({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	
-								{	printf("ffffffffffffff\n");
-									yylval=init_syntax_floatnode(yylineno,"FLOAT",atof(yytext));
+(({digit}*\.{digit}+)|({digit}+\.))|((({digit}*\.{digit}+)|({digit}+\.?))[eE][+-]?{digit}+)	{	
+									float t=atof(yytext);
+									yylval=init_syntax_floatnode(yylineno,"FLOAT",t);
 									return FLOAT;
 								}
 ;								{yylval=init_syntax_node(yylineno,"SEMI",NULL);	return SEMI;}
