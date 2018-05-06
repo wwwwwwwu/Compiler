@@ -71,7 +71,6 @@ DefList : 	/*e*/{$$=init_syntax_child_node("DefList",0,NULL);}
 		| Def DefList {$$=init_syntax_child_node("DefList",2,$1,$2);}
 		;
 Def : 		Specifier DecList SEMI {$$=init_syntax_child_node("Def",3,$1,$2,$3);}
-		| error SEMI
 		;
 DecList : 	Dec {$$=init_syntax_child_node("DecList",1,$1);}
 		| Dec COMMA DecList {$$=init_syntax_child_node("DecList",3,$1,$2,$3);}
@@ -103,6 +102,7 @@ Args : 		Exp COMMA Args {$$=init_syntax_child_node("Args",3,$1,$2,$3);}
 		;
 %%
 yyerror(){
+	noerror=0;
 	fprintf(stderr,"Error type B at Line %d:syntax error\n",yylineno);
 }
 

@@ -1,3 +1,4 @@
-int main(){
-	float i = 20.1 ;
+int main()
+{
+	int i=(1+1);
 }
