@@ -28,6 +28,53 @@ Type get_type_specifier(syntax_node *p);
 int get_varlist_field(syntax_node *p,FieldList fld);
 int get_declist_field(syntax_node *p,Type t,FieldList fld);
 Type get_struct_type(syntax_node *p);
+int get_vardec_field(syntax_node *p,Type t,FieldList fld);
+int get_deflist_field(syntax_node *p,FieldList fld);
+
+int get_deflist_field(syntax_node *p,FieldList fld)
+{
+	if (p->nr_child==0)
+	{
+		return 1;
+	}	
+	syntax_node *q=p->child[0];
+	syntax_node *declist_p=q->child[2];
+	Type t=get_type_specifier(q->child[0]);
+	if (get_declist_field(declist_p,t,fld)==0)
+		return 0;
+	return get_deflist_field(p->child[1],fld);
+}
+int get_vardec_field(syntax_node *p,Type t,FieldList fld)
+{
+	if (p->nr_child==1)
+	{
+		char *s=p->child[0]->inf;
+		FieldList i=fld;
+		for (;i->tail!=NULL;i=i->tail)
+		{
+			if (strcmp(s,i->tail->name)==0)
+			{
+				print_error(15,p->lineno,s);
+				return 0;
+			}
+		}
+		FieldList f=malloc(sizeof(struct FieldList_));
+		f->name=s;
+		f->type=t;
+		f->tail=NULL;
+		i->tail=f;
+		return 1;
+	}
+	else
+	{
+		syntax_node *q=p->child[2];
+		Type arr=malloc(sizeof(struct Type_));
+		arr->kind=ARRAY;
+		arr->array.elem=t;
+		arr->array.size=q->int_val;
+		return get_vardec_field(p->child[0],arr,fld);
+	}
+}
 
 void analysis_stmt(syntax_node *p,Type ret)
 {
@@ -101,7 +148,8 @@ void def_struct(syntax_node *p)
 Type get_struct_type(syntax_node *p)
 {
 	FieldList fld=malloc(sizeof (struct FieldList_));
-	strcpy(fld->name," ");
+	char *st=" ";
+	fld->name=st;
 	fld->type=NULL;
 	fld->tail=NULL;
 	if (get_deflist_field(p,fld)==0)
@@ -149,7 +197,8 @@ Type def_func(syntax_node *p,Type t)
 	if (p->nr_child==3)
 	{
 		FieldList fld=malloc(sizeof (struct FieldList_));
-		strcpy(fld->name,"return");
+		char *p="return";
+		fld->name=p;
 		fld->type=t;
 		fld->tail=NULL;
 		Type fun=malloc(sizeof (struct Type_));
@@ -161,7 +210,8 @@ Type def_func(syntax_node *p,Type t)
 	{
 		syntax_node *q=p->child[2];
 		FieldList fld=malloc(sizeof (struct FieldList_));
-		strcpy(fld->name,"return");
+		char *p="return";
+		fld->name=p;
 		fld->type=t;
 		fld->tail=NULL;
 		if (get_varlist_field(q,fld)==0)
@@ -365,7 +415,7 @@ Type lvalue_exp(syntax_node *p)
 	syntax_node *q=p->child[0];
 	if (p->nr_child==1&&strcmp(q->symbol,"ID")==0)
 	{
-		symboltype* pp=find_symbol(q->inf);
+		struct symboltype* pp=find_symbol(q->inf);
 		if (pp==NULL||pp->kind!=VARIBLE)
 		{
 			print_error(1,q->lineno,q->inf);
@@ -469,7 +519,7 @@ Type arith_exp(syntax_node *p)
 		Type ret2=analysis_exp(p->child[2]);
 		if (ret2==NULL)
 			return NULL;
-		if (ret2!=ret1)
+		if (ret2!=ret)
 		{
 			print_error(7,p->child[2]->lineno,"");
 			return NULL;
@@ -542,7 +592,7 @@ Type analysis_exp(syntax_node *p)
 {
 	if (p->nr_child==1)
 	{
-		syntax_node q=p->child[0];
+		syntax_node* q=p->child[0];
 		if (strcmp(q->symbol,"INT")==0){
 			Type t=malloc(sizeof (struct Type_));
 			t->kind=BASIC;
@@ -557,7 +607,7 @@ Type analysis_exp(syntax_node *p)
 		}
 		else
 		{
-			symboltype* pp=find_symbol(q->inf);
+			struct symboltype* pp=find_symbol(q->inf);
 			if (pp==NULL||pp->kind!=VARIBLE)
 			{
 				print_error(1,q->lineno,q->inf);
@@ -593,12 +643,12 @@ Type analysis_exp(syntax_node *p)
 		}
 		else
 		{
-			syntax_node q=p->child[0];
+			syntax_node* q=p->child[0];
 			if (strcmp(q->symbol,"LP")==0)
 				return analysis_exp(p->child[1]);
 			else
 			{
-				symboltype* pp=find_symbol(q->inf);
+				struct symboltype* pp=find_symbol(q->inf);
 				if (pp==NULL)
 				{
 					print_error(2,q->lineno,q->inf);
@@ -621,10 +671,10 @@ Type analysis_exp(syntax_node *p)
 	}
 	else
 	{
-		syntax_node q=p->child[0];
+		syntax_node* q=p->child[0];
 		if (strcmp(q->symbol,"ID")==0)
 		{
-			symboltype* pp=find_symbol(q->inf);
+			struct symboltype* pp=find_symbol(q->inf);
 			if (pp==NULL)
 			{
 				print_error(2,q->lineno,q->inf);
@@ -637,7 +687,7 @@ Type analysis_exp(syntax_node *p)
 			}
 			int ret=match_args(p->child[2],pp->type->structure->tail);
 			if (ret==1)
-				return en->type->structure->type;
+				return pp->type->structure->type;
 			print_error(9,q->lineno,q->inf);
 			return NULL;
 		}
@@ -650,28 +700,38 @@ Type analysis_exp(syntax_node *p)
 
 void analysis_tree(syntax_node *p,Type ret)
 {
+printf("%s\n",p->symbol);
 	if (p==NULL)
 	{
+		printf("NULL\n");
 		return;
 	}
 	if (strcmp(p->symbol,"Exp")==0)
 	{
+	//	printf("Exp\n");
 		analysis_exp(p);
+	//	printf("finishExp\n");
 	}
 	else if (strcmp(p->symbol,"Def")==0)
 	{
+	//	printf("Def\n");
 		analysis_def(p);
+	//	printf("finishDEF\n");
 	}
 	else if (strcmp(p->symbol,"ExtDef")==0)
 	{
+	//	printf("ExtDef\n");
 		analysis_extdef(p);
+	//	printf("finishEXTDEF\n");
 	}
 	else if (strcmp(p->symbol,"Stmt")==0)
 	{
+	//	printf("Stmt\n");
 		analysis_stmt(p,ret);
+	//	printf("finishSTMT\n");
 	}
 	else
-	{
+	{//printf("else %d\n",p->nr_child);
 		for (int i=0;i<p->nr_child;i++)
 		{
 			analysis_tree(p->child[i],ret);
@@ -682,8 +742,10 @@ void analysis_tree(syntax_node *p,Type ret)
 
 void begin_semantic(syntax_node* p)
 {
-	//printf("\n\n\n\n");
+//	printf("begin_semantic\n");
 	symbol_init();
+//	printf("symbol_init\n");
 	analysis_tree(p,NULL);
+	printf("semantic finished\n");
 }
 #endif

@@ -2,6 +2,7 @@
 	#include "lex.yy.c"
 	#include <stdio.h>
 	#include "include/syntaxtree.h"
+	#include "include/semantic.h"
 	int noerror=1;
 	void missing_error(char *str)
 	{
@@ -19,7 +20,7 @@
 %nonassoc ELSE 
 %nonassoc noer misser
 %%
-Program	: 	ExtDefList {$$=init_syntax_child_node("Program",1,$1); print_tree($$,0,noerror);} 
+Program	: 	ExtDefList {$$=init_syntax_child_node("Program",1,$1); print_tree($$,0,noerror);if(noerror==1){begin_semantic($$);}} 
 	   	;
 ExtDefList	: /*e*/{$$=init_syntax_child_node("ExtDefList",0,NULL);}
 		| ExtDef ExtDefList {$$=init_syntax_child_node("ExtDefList",2,$1,$2);} 

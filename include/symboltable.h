@@ -46,25 +46,25 @@ int insert_symbol(struct symboltype* a){
 	struct symboltype *p=(struct symboltype*)malloc(sizeof(struct symboltype));
 	tail->next=p;
 	tail=tail->next;
-	printf("insert %s success\n",a->name);	
+//	printf("insert %s success\n",a->name);	
 	return 1;
 }
 
 struct symboltype* find_symbol(char* name){
 	struct symboltype* p = head->next;
 	if(p==tail){
-		printf("can't find %s\n",name);
+	//	printf("can't find %s\n",name);
 		return NULL;
 	}
-	while(p!=NULL&&strcmp(name,p->name)!=0&&p!=tail){printf("11 %s %s\n",name,p->name);
+	while(p!=NULL&&strcmp(name,p->name)!=0&&p!=tail){//printf("11 %s %s\n",name,p->name);
 		p=p->next;
 		if(p==tail){
-			printf("can't find %s\n",name);
+	//		printf("can't find %s\n",name);
 			return NULL;
 		}
 	}
 	if(p!=NULL&&strcmp(name,p->name)==0){
-		printf("find %s success\n",name);	
+	//	printf("find %s success\n",name);	
 		return p;
 	}
 	return NULL;
