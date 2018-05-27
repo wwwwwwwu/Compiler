@@ -33,40 +33,52 @@ struct symboltype
 
 struct symboltype *head , *tail;
 struct symboltype* find_symbol(char* name);
+void print_sumbol();
 int type_equal(Type t1,Type t2);
 int insert_symbol(struct symboltype* a);
 void symbol_init(){
-	head=malloc(sizeof(struct symboltype));
-	head->next=tail;
+	//head=malloc(sizeof(struct symboltype));
+	tail=malloc(sizeof(struct symboltype));
+	head=tail;
 }
 
 int insert_symbol(struct symboltype* a){
+print_symbol();
 	if(find_symbol(a->name)!=NULL)return 0;
-	tail=a;
-	struct symboltype *p=(struct symboltype*)malloc(sizeof(struct symboltype));
-	tail->next=p;
+	tail->next=a;
+	//struct symboltype *p=malloc(sizeof(struct symboltype));
+	//tail->next=p;
 	tail=tail->next;
+	tail->next=NULL;
 //	printf("insert %s success\n",a->name);	
 	return 1;
 }
-
-struct symboltype* find_symbol(char* name){
+void print_symbol(){
+	if(head->next==tail)return;
 	struct symboltype* p = head->next;
-	if(p==tail){
+	while(p!=NULL){
+		printf("p %s\n",p->name);
+		p=p->next;
+	}
+}
+struct symboltype* find_symbol(char* name){
+	//print_symbol();
+	struct symboltype* p = head->next;
+	if(p==NULL){
 	//	printf("can't find %s\n",name);
 		return NULL;
 	}
-	while(p!=NULL&&strcmp(name,p->name)!=0&&p!=tail){//printf("11 %s %s\n",name,p->name);
+	while(strcmp(name,p->name)!=0){//printf("11 %s %s\n",name,p->name);
 		p=p->next;
-		if(p==tail){
+		if(p==NULL){
 	//		printf("can't find %s\n",name);
 			return NULL;
 		}
 	}
-	if(p!=NULL&&strcmp(name,p->name)==0){
+	//if(p!=NULL&&strcmp(name,p->name)==0){
 	//	printf("find %s success\n",name);	
 		return p;
-	}
+	//}
 	return NULL;
 }
 
@@ -76,7 +88,10 @@ int type_equal(Type t1,Type t2)
 		return 1;
 	if (t1->kind==t2->kind)
 	{
-		if (t1->kind==ARRAY)
+		if (t1->kind==BASIC){
+			return (t1->basic==t2->basic);
+		}
+		else if (t1->kind==ARRAY)
 		{
 			return type_equal(t1->array.elem,t2->array.elem);
 		}

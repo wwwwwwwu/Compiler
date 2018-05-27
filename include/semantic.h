@@ -37,11 +37,17 @@ int get_deflist_field(syntax_node *p,FieldList fld)
 	{
 		return 1;
 	}	
+//	printf("deflist succcc\n");
 	syntax_node *q=p->child[0];
-	syntax_node *declist_p=q->child[2];
+	syntax_node *declist_p=q->child[1];
+//	printf("deflist succcc\n");
 	Type t=get_type_specifier(q->child[0]);
+	
+//	printf("deflist succcc\n");
 	if (get_declist_field(declist_p,t,fld)==0)
 		return 0;
+	
+//	printf("deflist succcc\n");
 	return get_deflist_field(p->child[1],fld);
 }
 int get_vardec_field(syntax_node *p,Type t,FieldList fld)
@@ -82,6 +88,7 @@ void analysis_stmt(syntax_node *p,Type ret)
 	if (p->nr_child==3)
 	{
 		Type ret_t=analysis_exp(p->child[1]);
+		//printf("enum%d %d\n",ret->kind,ret_t->kind);
 		if (type_equal(ret_t,ret)==0)
 		{
 			print_error(8,q->lineno,"");
@@ -129,14 +136,16 @@ void def_struct(syntax_node *p)
 			if (opttag_p->child[0]==NULL)
 				return;
 			syntax_node *q=p->child[3];
+//printf("1111111112\n");
 			Type t=get_struct_type(q);
+			//printf("12321312321\n");
 			if (t==NULL)
 				return;
 			struct symboltype* s=malloc(sizeof(struct symboltype));
 			strcpy(s->name,opttag_p->child[0]->inf);
 			s->type=t;
 			s->kind=STRUCTURE;
-			int ret=insert_symbol(s);
+			int ret=insert_symbol(s);//printf("struct success\n");
 			if (ret==0)
 			{
 				print_error(16,opttag_p->child[0]->lineno,opttag_p->child[0]->inf);
@@ -152,8 +161,10 @@ Type get_struct_type(syntax_node *p)
 	fld->name=st;
 	fld->type=NULL;
 	fld->tail=NULL;
+	//printf("struct ssss\n");
 	if (get_deflist_field(p,fld)==0)
 		return NULL;
+	//printf("struct ssss213213\n");
 	Type stru=malloc(sizeof (struct Type_));
 	stru->kind=STRUC;
 	stru->structure=fld->tail;
@@ -161,15 +172,17 @@ Type get_struct_type(syntax_node *p)
 }
 
 int get_declist_field(syntax_node *p,Type t,FieldList fld)
-{
+{//printf("declist %d\n",p->nr_child);
 	syntax_node *q=p->child[0];
+//printf("%d  a1 1 1 \n",q->nr_child);
 	if (q->nr_child==3)
 	{
-		while (q->child[0]!=NULL) q=q->child[0];
+		while (q->nr_child!=0) q=q->child[0];
 		print_error(15,q->lineno,q->inf);
 		return 0;
 	}
 	syntax_node *vardec_p=q->child[0];
+	//printf("declist\n");
 	if (get_vardec_field(vardec_p,t,fld)==1)
 	{
 		if (p->nr_child==3)
@@ -210,8 +223,8 @@ Type def_func(syntax_node *p,Type t)
 	{
 		syntax_node *q=p->child[2];
 		FieldList fld=malloc(sizeof (struct FieldList_));
-		char *p="return";
-		fld->name=p;
+		char *st="return";
+		fld->name=st;
 		fld->type=t;
 		fld->tail=NULL;
 		if (get_varlist_field(q,fld)==0)
@@ -223,7 +236,8 @@ Type def_func(syntax_node *p,Type t)
 			strcpy(s->name,i->name);
 			s->type=i->type;
 			s->kind=VARIBLE;
-			insert_symbol(s);
+			int ret=insert_symbol(s);
+			if(ret==0)print_error(3,p->child[0]->lineno,i->name);
 		}
 		Type fun=malloc(sizeof (struct Type_));
 		fun->kind=FUNC;
@@ -235,18 +249,18 @@ void analysis_extdef(syntax_node *p)
 {
 	syntax_node* q=p->child[0];
 	if (strcmp(p->child[1]->symbol,"ExtDecList")==0)
-	{
+	{//printf("111\n");
 		Type t=get_type_specifier(q);
 		if (t==NULL)
 			return;
 		def_dec_list(p->child[1],t);
 	}
 	else if (strcmp(p->child[1]->symbol,"SEMI")==0)
-	{
+	{//printf("222\n");
 		def_struct(q);
 	}
 	else
-	{
+	{//printf("333\n");
 		Type fun_ret=get_type_specifier(q);
 		if (fun_ret==NULL)
 			return;
@@ -302,6 +316,7 @@ void def_dec(syntax_node *p,Type t)
 		Type rt=analysis_exp(p->child[2]);
 		if (rt==NULL)
 			return;
+		//printf("enum %d %d\n",t->kind,rt->kind);
 		if (type_equal(rt,t)==0)
 		{
 			print_error(5,q->lineno,"");
@@ -469,11 +484,13 @@ Type array_exp(syntax_node *p)
 }
 Type dot_exp(syntax_node *p)
 {
+//	printf("...........\n");
 	syntax_node *q=p->child[0];
 	Type t=analysis_exp(q);
 	q=p->child[1];
 	if (t==NULL)
 		return NULL;
+	//printf("%d %d\n",t->kind,STRUCTURE);
 	if (t->kind!=STRUCTURE)
 	{
 		print_error(13,q->lineno,"");
@@ -578,7 +595,9 @@ int match_args(syntax_node* p,FieldList flp)
 		return 0;
 	}
 	for(int i=0;i<p->nr_child;i+=2){
-		if (type_equal(analysis_exp(p->child[i]),flp->type)==0)
+		if(flp==NULL)return 0;
+		Type t=analysis_exp(p->child[i]);
+		if (type_equal(t,flp->type)==0)
 		{
 			return 0;
 		}
@@ -602,7 +621,7 @@ Type analysis_exp(syntax_node *p)
 		else if (strcmp(q->symbol,"FLOAT")==0){
 			Type t=malloc(sizeof (struct Type_));
 			t->kind=BASIC;
-			t->basic=0;
+			t->basic=1;
 			return t;
 		}
 		else
@@ -633,7 +652,7 @@ Type analysis_exp(syntax_node *p)
 				return assign_exp(p);
 			}
 			else if (strcmp(pp->symbol,"DOT")==0)
-			{
+			{//	printf("dotdot\n");
 				return dot_exp(p);
 			}
 			else
@@ -670,7 +689,7 @@ Type analysis_exp(syntax_node *p)
 		}
 	}
 	else
-	{
+	{//printf("22222222222222222\n");
 		syntax_node* q=p->child[0];
 		if (strcmp(q->symbol,"ID")==0)
 		{
@@ -708,30 +727,22 @@ printf("%s\n",p->symbol);
 	}
 	if (strcmp(p->symbol,"Exp")==0)
 	{
-	//	printf("Exp\n");
 		analysis_exp(p);
-	//	printf("finishExp\n");
 	}
 	else if (strcmp(p->symbol,"Def")==0)
 	{
-	//	printf("Def\n");
 		analysis_def(p);
-	//	printf("finishDEF\n");
 	}
 	else if (strcmp(p->symbol,"ExtDef")==0)
 	{
-	//	printf("ExtDef\n");
 		analysis_extdef(p);
-	//	printf("finishEXTDEF\n");
 	}
 	else if (strcmp(p->symbol,"Stmt")==0)
 	{
-	//	printf("Stmt\n");
 		analysis_stmt(p,ret);
-	//	printf("finishSTMT\n");
 	}
 	else
-	{//printf("else %d\n",p->nr_child);
+	{
 		for (int i=0;i<p->nr_child;i++)
 		{
 			analysis_tree(p->child[i],ret);
