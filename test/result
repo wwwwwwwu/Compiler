@@ -1,0 +1,34 @@
+Error type 1 at Line 4:Undefined varieble "j"
+semantic finished
+Error type 2 at Line 3:Undefined function "inc"
+semantic finished
+Error type 3 at Line 3:Redefined varieble "i"
+semantic finished
+Error type 4 at Line 4:Redefined function "func"
+semantic finished
+Error type 5 at Line 3:Type mismatched for assignment
+semantic finished
+Error type 6 at Line 3:The left-hand side of an assignment must be a variable
+semantic finished
+Error type 7 at Line 4:Type mismatched for operands
+semantic finished
+Error type 8 at Line 3:Type mismatched for return
+semantic finished
+Error type 9 at Line 6:Function "func" is not applicable for these arguments
+semantic finished
+Error type 10 at Line 3:"i" is not an array
+semantic finished
+Error type 11 at Line 3:"i" is not a function
+semantic finished
+Error type 12 at Line 3:Invalid types for array sbscript
+semantic finished
+Error type 13 at Line 8:Illegal use of "."
+semantic finished
+Error type 14 at Line 7:Non-existent field "n"
+semantic finished
+Error type 15 at Line 3:Redefined field "x"
+semantic finished
+Error type 16 at Line 4:Duplicated name "Position"
+semantic finished
+Error type 17 at Line 2:Undefined structure "Position"
+semantic finished
