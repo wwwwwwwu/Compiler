@@ -37,7 +37,6 @@ void print_sumbol();
 int type_equal(Type t1,Type t2);
 int insert_symbol(struct symboltype* a);
 void symbol_init(){
-	//head=malloc(sizeof(struct symboltype));
 	tail=malloc(sizeof(struct symboltype));
 	head=tail;
 }
@@ -46,40 +45,29 @@ int insert_symbol(struct symboltype* a){
 print_symbol();
 	if(find_symbol(a->name)!=NULL)return 0;
 	tail->next=a;
-	//struct symboltype *p=malloc(sizeof(struct symboltype));
-	//tail->next=p;
 	tail=tail->next;
 	tail->next=NULL;
-//	printf("insert %s success\n",a->name);	
 	return 1;
 }
 void print_symbol(){
 	if(head->next==tail)return;
 	struct symboltype* p = head->next;
 	while(p!=NULL){
-		printf("p %s\n",p->name);
 		p=p->next;
 	}
 }
 struct symboltype* find_symbol(char* name){
-	//print_symbol();
 	struct symboltype* p = head->next;
 	if(p==NULL){
-	//	printf("can't find %s\n",name);
 		return NULL;
 	}
-	while(strcmp(name,p->name)!=0){//printf("11 %s %s\n",name,p->name);
+	while(strcmp(name,p->name)!=0){
 		p=p->next;
 		if(p==NULL){
-	//		printf("can't find %s\n",name);
 			return NULL;
 		}
 	}
-	//if(p!=NULL&&strcmp(name,p->name)==0){
-	//	printf("find %s success\n",name);	
-		return p;
-	//}
-	return NULL;
+	return p;
 }
 
 int type_equal(Type t1,Type t2)

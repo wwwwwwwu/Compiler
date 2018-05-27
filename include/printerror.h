@@ -22,7 +22,7 @@ void print_error(int i,int lineno,char *inf){
 		case 12:printf("Invalid types for array sbscript");break;
 		case 13:printf("Illegal use of \".\"");break;
 		case 14:printf("Non-existent field \"%s\"",inf);break;
-		case 15:printf("Invalid field \"%s\"",inf);break;
+		case 15:printf("Redefined field \"%s\"",inf);break;
 		case 16:printf("Duplicated name \"%s\"",inf);break;
 		case 17:printf("Undefined structure \"%s\"",inf);break;
 	}
