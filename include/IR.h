@@ -19,7 +19,6 @@
 	}
 static int nowtemp=0;
 static int nowlabel=0;
-extern FILE* outfile;
 typedef struct Operand_* Operand;
 typedef int Label;
 struct Operand_
@@ -138,6 +137,10 @@ void change2var(Operand p,struct symboltype *s)
 		p->kind=OP_FUNC;
 	p->sym=s;
 }
+void change2addrtemp(Operand p)
+{
+	p->kind=OP_ADDRESS;
+}
 int new_label()
 {
 	int t;
@@ -238,7 +241,190 @@ CodesPointer translate_arith_exp(syntax_node *p,enum IC_kind ic_kind,Operand t);
 CodesPointer translate_call(syntax_node *p,Operand t);
 CodesPointer translate_arr(syntax_node *p,Operand t);
 CodesPointer translate_tree(syntax_node *p);
+CodesPointer translate_stmt(syntax_node *p);
+CodesPointer translate_if(syntax_node *p);
+CodesPointer translate_if_else(syntax_node *p);
+CodesPointer translate_while(syntax_node *p);
+CodesPointer translate_vardec(syntax_node *p,Operand t);
+CodesPointer translate_fundec(syntax_node *p);
+CodesPointer translate_param(syntax_node *p);
+CodesPointer translate_param(syntax_node *p)
+{
+	CodesPointer ret=NULL;
+	syntax_node *vardec_p=p->child[0]->child[1];
+	if (vardec_p->nr_child==1)
+	{
+		syntax_node *id_p=vardec_p->child[0];
+		Operand t1=new_var(find_symbol(id_p->inf));
+		NEW_CODE(ret,IC_PARAM,t1,NULL,NULL);
+		if (p->nr_child==1)
+		{
+			return ret;
+		}
+		else
+			return merge_cp(ret,translate_param(p->child[2]));
+	}
+	else
+	{
+		syntax_node *id_p;
+		while (vardec_p->nr_child!=1)
+		{
+				vardec_p=vardec_p->child[0];
+		}
+		id_p=vardec_p->child[0];
+		Operand t1=new_var(find_symbol(id_p->inf));
+		NEW_CODE(ret,IC_PARAM,t1,NULL,NULL);
+		if (p->nr_child==1)
+		{
+			return ret;
+		}
+		else
+			return merge_cp(ret,translate_param(p->child[2]));
+	}
+}	
 
+CodesPointer translate_fundec(syntax_node *p)
+{
+	CodesPointer ret=NULL;
+	Operand t1=new_var(find_symbol(p->child[0]->inf));	
+	NEW_CODE(ret,IC_FUNCTION,t1,NULL,NULL);
+	if (p->nr_child==3)
+	{
+		return ret;
+	}
+	else
+	{
+		return merge_cp(ret,translate_param(p->child[2]));
+	}
+	
+}
+CodesPointer translate_vardec(syntax_node *p,Operand t)
+{
+	if (p->nr_child==1)
+	{
+		struct symboltype *q=find_symbol(p->child[0]->inf);
+		if (q->kind==VARIBLE&&(q->type->kind==ARRAY||q->type->kind==STRUC))
+		{
+			int size=get_size(q->type);
+			Operand t1=new_int(size);
+			change2var(t,q);
+			CodesPointer ret=NULL;
+			NEW_CODE(ret,IC_DEC,t,t1,NULL)
+			return ret;
+		}
+		free(t);
+		return NULL;
+	}
+	else
+	{
+		return translate_vardec(p->child[0],t);
+	}
+}
+CodesPointer translate_while(syntax_node *p)
+{
+	Operand t1,t2,t3;
+	t1=new_labelopd();
+	t2=new_labelopd();
+	t3=new_labelopd();
+	CodesPointer ret=NULL,code1=NULL,code2=NULL;
+	code1=translate_cond(p->child[2],t2,t3);
+	code2=translate_stmt(p->child[4]);
+	NEW_CODE(ret,IC_LABEL,t1,NULL,NULL);
+	ret=merge_cp(ret,code1);
+	NEW_CODE(ret,IC_LABEL,t2,NULL,NULL);
+	ret=merge_cp(ret,code2);
+	NEW_CODE(ret,IC_GOTO,t1,NULL,NULL);
+	NEW_CODE(ret,IC_LABEL,t3,NULL,NULL);
+	return ret;
+}
+CodesPointer translate_if(syntax_node *p)
+{
+	Operand t1,t2;
+	t1=new_labelopd();
+	t2=new_labelopd();
+	CodesPointer code1=NULL,code2=NULL;
+	code1=translate_cond(p->child[2],t1,t2);
+	code2=translate_stmt(p->child[4]);
+	NEW_CODE(code1,IC_LABEL,t1,NULL,NULL);
+	NEW_CODE(code2,IC_LABEL,t2,NULL,NULL);
+	return merge_cp(code1,code2);
+}
+
+CodesPointer translate_if_else(syntax_node *p)
+{
+	Operand t1,t2,t3;
+	t1=new_labelopd();
+	t2=new_labelopd();
+	t3=new_labelopd();
+	CodesPointer code1=NULL,code2=NULL,code3=NULL;
+	code1=translate_cond(p->child[2],t1,t2);
+	code2=translate_stmt(p->child[4]);
+	code3=translate_stmt(p->child[6]);
+	NEW_CODE(code1,IC_LABEL,t1,NULL,NULL);
+	NEW_CODE(code2,IC_GOTO,t3,NULL,NULL);
+	NEW_CODE(code2,IC_LABEL,t2,NULL,NULL);
+	NEW_CODE(code3,IC_LABEL,t3,NULL,NULL);
+	code1=merge_cp(code1,code2);
+	return merge_cp(code1,code3);
+}
+
+CodesPointer translate_stmt(syntax_node *p)
+{
+	syntax_node *q=p->child[0];
+	if (p->nr_child==2)
+	{
+		Operand t=new_temp();
+		CodesPointer ret=translate_exp(q,t);
+		return ret;
+	}
+	else if(p->nr_child==1)
+	{
+		return translate_tree(q);
+	}
+	else if(p->nr_child==3)
+	{
+		q=p->child[1];
+		Operand t=new_temp();
+		CodesPointer ret=translate_exp(q,t);
+		NEW_CODE(ret,IC_RETURN,t,NULL,NULL);
+		return ret;
+	}
+	else if (strcmp(q->symbol,"IF")==0)
+	{
+		if (p->nr_child==5)
+		{
+			return translate_if(p);
+		}
+		else
+		{
+			return translate_if_else(p);
+		}
+	}
+	else 
+	{
+		return translate_while(p);
+	}
+}
+
+CodesPointer translate_args(syntax_node *p,CodesPointer* arg_code)
+{
+	syntax_node *q=p->child[0];
+	Operand t=new_temp();
+	Type tye=analysis_exp(q);
+	CodesPointer ret;
+	if (tye->kind==BASIC)
+		ret=translate_exp(q,t);
+	else
+	{
+		ret=get_addr(q,t,&tye);	
+	}	
+	if (p->nr_child==3)
+	{
+		ret=merge_cp(ret,translate_args(p->child[2],arg_code));
+	}
+	NEW_CODE((*arg_code),IC_ARG,t,NULL,NULL);
+	return ret;
+}
 CodesPointer translate_arr(syntax_node *p,Operand t)
 {
 	CodesPointer ret=NULL;
@@ -668,12 +854,232 @@ CodesPointer translate_tree(syntax_node *p)
 		Operand t=new_temp();
 		return translate_exp(p,t);
 	}
+	else if (strcmp(p->symbol,"Stmt")==0)
+	{
+		return translate_stmt(p);
+	}
+	else if (strcmp(p->symbol,"Dec")==0)
+	{
+		Operand t=new_temp();
+		if (p->nr_child!=3)
+			return translate_vardec(p->child[0],t);
+		return translate_assign(p,t);
+	}
+	else if (strcmp(p->symbol,"VarDec")==0)
+	{
+		Operand t=new_temp();
+		return translate_vardec(p,t);
+	}
+	else if (strcmp(p->symbol,"FunDec")==0)
+	{
+		return translate_fundec(p);
+	}
+	else if (strcmp(p->symbol,"StructSpecifier")==0)
+	{
+		return NULL;
+	}
+	else
+	{
+		int i=0;
+		for (;i<p->nr_child;i++)
+		{
+			ret=merge_cp(ret,translate_tree(p->child[i]));
+		}
+		return ret;
+	}
 
 }
+
+//---------------------------------------
+void fprint_opd(FILE *f,Operand p)
+{
+	switch(p->kind)
+	{
+		case OP_ADDRVAR:fprintf(f,"&");
+		case OP_VARIABLE:fprintf(f,"v%d",p->sym->no);break;
+		case OP_FUNC:fprintf(f,"%s",p->sym->name);break;
+		case OP_ADDRESS:
+		case OP_TEMP:fprintf(f,"t%d",p->var_no);break;
+		case OP_INT:fprintf(f,"#%d",p->int_value);break;
+		case OP_LABEL:fprintf(f,"l%d",p->label_no);break;
+	}
+}
+void fprint_staropd(FILE *f,Operand p)
+{
+	switch(p->kind)
+	{
+		case OP_ADDRVAR:fprintf(f,"v%d",p->sym->no);break;
+		case OP_VARIABLE:fprintf(f,"*v%d",p->sym->no);break;
+		case OP_ADDRESS:
+		case OP_TEMP:fprintf(f,"*t%d",p->var_no);break;
+		case OP_INT:fprintf(f,"*#%d",p->int_value);break;
+	}
+}
+void fprint_relop(FILE *f,InterCode p)
+{
+	switch (p.jump.relop)
+	{
+		case MORE:fprintf(f,">");break;
+		case LESS:fprintf(f,"<");break;
+		case NOGREATER:fprintf(f,"<=");break;
+		case NOLESS:fprintf(f,">=");break;
+		case EQUAL:fprintf(f,"==");break;
+		case NOTEQ:fprintf(f,"!=");break;
+	}
+}
+
+void fprint_code(FILE *f,InterCode p)
+{
+	switch (p.kind)
+	{
+		case IC_LABEL:
+			fprintf(f,"LABEL\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:\n");
+			break;
+		case IC_FUNCTION:
+			fprintf(f,"FUNCTION\t%s\t:\n",p.binop.target->sym->name);
+			break;
+		case IC_ASSIGN:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\n");
+			break;
+		case IC_ADD:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\t+\t");
+			fprint_opd(f,p.binop.op2);
+			fprintf(f,"\n");
+			break;
+		case IC_SUB:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\t-\t");
+			fprint_opd(f,p.binop.op2);
+			fprintf(f,"\n");
+			break;
+		case IC_MUL:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\t*\t");
+			fprint_opd(f,p.binop.op2);
+			fprintf(f,"\n");
+			break;
+		case IC_DIV:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\t/\t");
+			fprint_opd(f,p.binop.op2);
+			fprintf(f,"\n");
+			break;
+		case IC_GETADDR:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t&");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\n");
+			break;
+		case IC_GETVAL:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_staropd(f,p.binop.op1);
+			fprintf(f,"\n");
+			break;
+		case IC_ADDRVAL:
+			fprint_staropd(f,p.binop.target);
+			fprintf(f,"\t:=\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\n");
+			break;
+		case IC_GOTO:
+			fprintf(f,"GOTO\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_IF:
+			fprintf(f,"IF\t");
+			fprint_opd(f,p.jump.op1);
+			fprintf(f,"\t");
+			fprint_relop(f,p);
+			fprintf(f,"\t");
+			fprint_opd(f,p.jump.op2);
+			fprintf(f,"\tGOTO\t");
+			fprint_opd(f,p.jump.target);
+			fprintf(f,"\n");
+			break;
+		case IC_RETURN:
+			fprintf(f,"RETURN\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_DEC:
+			fprintf(f,"DEC\t");
+			fprint_staropd(f,p.binop.target);
+			fprintf(f,"\t");
+			fprintf(f,"%d",p.binop.op1->int_value);
+			fprintf(f,"\n");
+			break;
+		case IC_ARG:
+			fprintf(f,"ARG\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_ARGADDR:
+			fprintf(f,"ARG\t&");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_PARAM:
+			fprintf(f,"PARAM\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_READ:
+			fprintf(f,"READ\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_WRITE:
+			fprintf(f,"WRITE\t");
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\n");
+			break;
+		case IC_CALL:
+			fprint_opd(f,p.binop.target);
+			fprintf(f,"\t:=\tCALL\t");
+			fprint_opd(f,p.binop.op1);
+			fprintf(f,"\n");
+			break;
+	}
+}
+
+void fprint_codes(InterCodes p,FILE* f)
+{
+	if (f==NULL)
+	{
+		printf("fopen error\n");
+		return;
+	}
+	while (p!=NULL)
+	{
+		fprint_code(f,p->code);
+		p=p->next;
+	}
+}
+
+//---------------------------------------
 void begin_translate(syntax_node *p)
 {
+	
+	FILE* outfile=fopen("outfile","w");
 	opd_zero=new_int(0);
-	opd_one=new_int(1);
-	translate_tree(p);
+	opd_one=new_int(1);printf("111111111111\n");
+	CodesPointer t=translate_tree(p);printf("22222222222\n");
+	fprint_codes(t->firstnode,outfile);printf("3333333\n");
 }
 #endif

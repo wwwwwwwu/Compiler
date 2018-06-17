@@ -29,10 +29,12 @@ struct symboltype
 	Type type;
 	char name[64];
 	struct symboltype* next;
+	int no;
 };
 
 struct symboltype *head , *tail;
 struct symboltype* find_symbol(char* name);
+static int No=0;
 void print_sumbol();
 int type_equal(Type t1,Type t2);
 int insert_symbol(struct symboltype* a);
@@ -45,6 +47,8 @@ int insert_symbol(struct symboltype* a){
 	if(find_symbol(a->name)!=NULL)return 0;
 	tail->next=a;
 	tail=tail->next;
+	tail->no=No;
+	No++;
 	tail->next=NULL;
 	return 1;
 }
@@ -118,6 +122,18 @@ int get_size(Type a)
 			ret+=get_size(p->type);
 		return ret;
 	}
+}
+
+int get_structoff(Type a,char *s)
+{
+	int ret=0;
+	FieldList p=a->structure;
+	while (strcmp(p->name,s)!=0)
+	{
+		ret+=get_size(p->type);
+		p=p->tail;
+	}
+	return ret;
 }
 /*
 
