@@ -611,16 +611,16 @@ CodesPointer translate_dot(syntax_node *p,Operand t)
 CodesPointer translate_assign(syntax_node *p,Operand t)
 {
 	CodesPointer ret=NULL;
-	if (strcmp(p->child[0]->symbol,"ID")==0)
+	if (strcmp(p->child[0]->child[0]->symbol,"ID")==0)
 	{
-		Operand t1=new_var(find_symbol(p->child[0]->inf));
+		Operand t1=new_var(find_symbol(p->child[0]->child[0]->inf));
 		Operand t2=new_temp();
 		ret=merge_cp(ret,translate_exp(p->child[2],t2));
 		NEW_CODE(ret,IC_ASSIGN,t1,t2,NULL);
 		change2var(t,t1->sym);
 		return ret;
 	}
-	else if (p->nr_child==4)
+	else if (p->child[0]->nr_child==4)
 	{
 		Operand t1=new_temp();
 		Operand t2=new_temp();
@@ -632,7 +632,7 @@ CodesPointer translate_assign(syntax_node *p,Operand t)
 		t->int_value=t2->int_value;
 		return ret;
 	}
-	else if (p->nr_child==3)
+	else if (p->child[0]->nr_child==3)
 	{
 		Operand t1=new_temp();
 		Operand t2=new_temp();
@@ -850,12 +850,12 @@ CodesPointer translate_tree(syntax_node *p)
 		return NULL;
 	}
 	if (strcmp(p->symbol,"Exp")==0)
-	{
+	{printf("11\n");
 		Operand t=new_temp();
 		return translate_exp(p,t);
 	}
 	else if (strcmp(p->symbol,"Stmt")==0)
-	{
+	{printf("12\n");
 		return translate_stmt(p);
 	}
 	else if (strcmp(p->symbol,"Dec")==0)
@@ -866,20 +866,20 @@ CodesPointer translate_tree(syntax_node *p)
 		return translate_assign(p,t);
 	}
 	else if (strcmp(p->symbol,"VarDec")==0)
-	{
+	{printf("14\n");
 		Operand t=new_temp();
 		return translate_vardec(p,t);
 	}
 	else if (strcmp(p->symbol,"FunDec")==0)
-	{
+	{printf("15\n");
 		return translate_fundec(p);
 	}
 	else if (strcmp(p->symbol,"StructSpecifier")==0)
-	{
+	{printf("16\n");
 		return NULL;
 	}
 	else
-	{
+	{printf("17\n");
 		int i=0;
 		for (;i<p->nr_child;i++)
 		{
@@ -1076,10 +1076,10 @@ void fprint_codes(InterCodes p,FILE* f)
 void begin_translate(syntax_node *p)
 {
 	
-	FILE* outfile=fopen("outfile","w");
+	FILE* outfile=fopen("outfile.ir","w");
 	opd_zero=new_int(0);
-	opd_one=new_int(1);printf("111111111111\n");
-	CodesPointer t=translate_tree(p);printf("22222222222\n");
-	fprint_codes(t->firstnode,outfile);printf("3333333\n");
+	opd_one=new_int(1);
+	CodesPointer t=translate_tree(p);//printf("111111111111\n");
+	fprint_codes(t->firstnode,outfile);//printf("3333333\n");
 }
 #endif

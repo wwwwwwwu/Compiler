@@ -41,6 +41,44 @@ int insert_symbol(struct symboltype* a);
 void symbol_init(){
 	tail=malloc(sizeof(struct symboltype));
 	head=tail;
+	Type t=malloc(sizeof(struct Type_));
+	t->kind=BASIC;
+	t->basic=0;
+	FieldList read=malloc(sizeof(struct FieldList_));
+	//strcpy(read->name,"");
+	read->type=t;
+	read->tail=NULL;
+	Type r=malloc(sizeof(struct Type_));
+	r->kind=FUNC;
+	r->structure=read;
+	struct symboltype *s=malloc (sizeof(struct symboltype));
+	strcpy(s->name,"read");
+	s->type=r;
+	s->kind=FUNCTION;
+	insert_symbol(s);
+
+
+
+	struct symboltype *ss=malloc (sizeof(struct symboltype));
+	
+	FieldList write1=malloc(sizeof(struct FieldList_));
+	//strcpy(write1->name,"");
+	write1->type=t;
+	write1->tail=NULL;
+
+	FieldList write2=malloc(sizeof(struct FieldList_));
+	//strcpy(write2->name,"");
+	write2->type=t;
+	write2->tail=write1;
+
+	Type funt=malloc(sizeof(struct Type_));
+	funt->kind=FUNC;
+	funt->structure=write2;
+
+	strcpy(ss->name,"write");
+	ss->type=funt;
+	ss->kind=FUNCTION;
+	insert_symbol(ss);
 }
 
 int insert_symbol(struct symboltype* a){
