@@ -94,7 +94,6 @@ Operand new_temp()
 	Operand p=malloc(sizeof(struct Operand_));
 	p->kind=OP_TEMP;
 	nowtemp++;
-	//printf("%dkkkkkkkkk\n",nowtemp);
 	p->var_no=nowtemp-1;
 	return p;
 }
@@ -125,17 +124,17 @@ enum IC_relop get_relop(char *s)
 
 void change2var(Operand p,struct symboltype *s)
 {
-	if (s->kind==VARIBLE)
+	if (s->kind==VARIBLE||s->kind==PARADDR)
 	{
-		if (s->type->kind==BASIC)
-			p->kind=OP_VARIABLE;
-		else if (s->type->kind==FUNC)
-			p->kind=OP_FUNC;
-		else
-			p->kind=OP_ADDRVAR;
+		if (s->type->kind==BASIC){
+			p->kind=OP_VARIABLE;}
+		else if (s->type->kind==FUNC){
+			p->kind=OP_FUNC;}
+		else{
+			p->kind=OP_ADDRVAR;}
 	}
-	else if (s->kind==FUNCTION)
-		p->kind=OP_FUNC;
+	else if (s->kind==FUNCTION){
+		p->kind=OP_FUNC;}
 	p->sym=s;
 }
 void change2addrtemp(Operand p)
@@ -1080,7 +1079,7 @@ void begin_translate(syntax_node *p)
 	FILE* outfile=fopen("outfile.ir","w");
 	opd_zero=new_int(0);
 	opd_one=new_int(1);
-	CodesPointer t=translate_tree(p);//printf("111111111111\n");
-	fprint_codes(t->firstnode,outfile);//printf("3333333\n");
+	CodesPointer t=translate_tree(p);
+	fprint_codes(t->firstnode,outfile);
 }
 #endif

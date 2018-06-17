@@ -1,29 +1,19 @@
-FUNCTION	fact	:
-PARAM	v2
-IF	t12042224	==	#1	GOTO	l0
+FUNCTION	main	:
+READ	t2
+v3	:=	t2
+IF	v3	>	#0	GOTO	l0
 GOTO	l1
 LABEL	l0	:
-RETURN	t12042224
+WRITE	#1
 GOTO	l2
 LABEL	l1	:
-t6	:=	t12042224	-	#1
-ARG	t6
-t5	:=	CALL	fact
-t3	:=	t12042224	*	t5
-RETURN	t3
-LABEL	l2	:
-FUNCTION	main	:
-READ	t12
-v5	:=	t12
-IF	v5	>	#1	GOTO	l3
+IF	v3	<	#0	GOTO	l3
 GOTO	l4
 LABEL	l3	:
-ARG	v5
-t16	:=	CALL	fact
-v6	:=	t16
+WRITE	#-1
 GOTO	l5
 LABEL	l4	:
-v6	:=	#1
+WRITE	#0
 LABEL	l5	:
-WRITE	v6
+LABEL	l2	:
 RETURN	#0

@@ -91,8 +91,6 @@ int insert_symbol(struct symboltype* a){
 	tail->no=No;
 	No++;
 	tail->next=NULL;
-	printf("insert %s\n",a->name);
-	//if(find_symbol(a->name)!=NULL)printf("yes\n");
 	return 1;
 }
 void print_symbol(){
