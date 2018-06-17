@@ -1,4 +1,5 @@
 #include <stdio.h>
+FILE *outfile;
 int main(int argc,char **argv){
 	if (argc <= 1) {
 		return 1;
@@ -9,6 +10,7 @@ int main(int argc,char **argv){
 		perror(argv[1]);
 		return 1;
 	}
+	outfile=fopen(argv[2],"w");
 	yyrestart(f);
 	yyparse();
 	return 0;

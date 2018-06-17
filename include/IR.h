@@ -19,6 +19,7 @@
 	}
 static int nowtemp=0;
 static int nowlabel=0;
+extern FILE* outfile;
 typedef struct Operand_* Operand;
 typedef int Label;
 struct Operand_
@@ -1075,8 +1076,6 @@ void fprint_codes(InterCodes p,FILE* f)
 //---------------------------------------
 void begin_translate(syntax_node *p)
 {
-	
-	FILE* outfile=fopen("outfile.ir","w");
 	opd_zero=new_int(0);
 	opd_one=new_int(1);
 	CodesPointer t=translate_tree(p);
