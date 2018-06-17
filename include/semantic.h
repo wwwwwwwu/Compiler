@@ -261,7 +261,7 @@ void analysis_extdef(syntax_node *p)
 		struct symboltype* s=malloc(sizeof(struct symboltype));
 		strcpy(s->name,q->child[0]->inf);
 		s->type=t;
-		s->kind=FUNC;
+		s->kind=FUNCTION;
 		int ret=insert_symbol(s);
 		if (ret==0)
 		{
@@ -420,7 +420,7 @@ Type lvalue_exp(syntax_node *p)
 	if (p->nr_child==1&&strcmp(q->symbol,"ID")==0)
 	{
 		struct symboltype* pp=find_symbol(q->inf);
-		if (pp==NULL||pp->kind!=VARIBLE)
+		if (pp==NULL||(pp->kind!=VARIBLE&&pp->kind!=PARADDR))
 		{
 			print_error(1,q->lineno,q->inf);
 			return NULL;
@@ -523,7 +523,7 @@ Type arith_exp(syntax_node *p)
 		Type ret2=analysis_exp(p->child[2]);
 		if (ret2==NULL)
 			return NULL;
-		if (ret2!=ret)
+		if ((ret2->kind!=ret->kind)||(ret2->basic!=ret->basic))
 		{
 			print_error(7,p->child[2]->lineno,"");
 			return NULL;
@@ -547,6 +547,24 @@ Type logic_exp(syntax_node *p)
 			return NULL;
 		}
 		return ret;
+	}
+	else if (strcmp(p->child[1]->symbol,"RELOP")==0)
+	{
+		Type ret_t1=analysis_exp(q);
+		if (ret_t1==NULL)
+			return NULL;
+		Type ret_t2=analysis_exp(p->child[2]);
+		if (ret_t2==NULL)
+			return NULL;
+		if (ret_t2!=ret_t1)
+		{
+			print_error(7,p->child[2]->lineno,"");
+			return NULL;
+		}
+		Type t=malloc(sizeof(struct Type_));
+		t->kind=BASIC;
+		t->basic=0;
+		return t;
 	}
 	else
 	{
@@ -660,7 +678,7 @@ Type analysis_exp(syntax_node *p)
 					print_error(2,q->lineno,q->inf);
 					return NULL;
 				}
-				if (pp->kind!=FUNC)
+				if (pp->kind!=FUNCTION)
 				{
 					print_error(11,q->lineno,q->inf);
 					return NULL;
@@ -686,7 +704,7 @@ Type analysis_exp(syntax_node *p)
 				print_error(2,q->lineno,q->inf);
 				return NULL;
 			}
-			if (pp->kind!=FUNC)
+			if (pp->kind!=FUNCTION)
 			{
 				print_error(11,q->lineno,q->inf);
 				return NULL;

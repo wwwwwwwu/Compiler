@@ -32,15 +32,19 @@ struct symboltype
 	int no;
 };
 
-struct symboltype *head , *tail;
+static struct symboltype *head , *tail;
 struct symboltype* find_symbol(char* name);
 static int No=0;
 void print_sumbol();
 int type_equal(Type t1,Type t2);
+void insert_wr();
 int insert_symbol(struct symboltype* a);
 void symbol_init(){
 	tail=malloc(sizeof(struct symboltype));
 	head=tail;
+	insert_wr();
+}
+void insert_wr(){
 	Type t=malloc(sizeof(struct Type_));
 	t->kind=BASIC;
 	t->basic=0;
@@ -80,7 +84,6 @@ void symbol_init(){
 	ss->kind=FUNCTION;
 	insert_symbol(ss);
 }
-
 int insert_symbol(struct symboltype* a){
 	if(find_symbol(a->name)!=NULL)return 0;
 	tail->next=a;
@@ -88,6 +91,8 @@ int insert_symbol(struct symboltype* a){
 	tail->no=No;
 	No++;
 	tail->next=NULL;
+	printf("insert %s\n",a->name);
+	//if(find_symbol(a->name)!=NULL)printf("yes\n");
 	return 1;
 }
 void print_symbol(){

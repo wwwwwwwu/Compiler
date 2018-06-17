@@ -25,6 +25,10 @@ void print_error(int i,int lineno,char *inf){
 		case 15:printf("Redefined field \"%s\"",inf);break;
 		case 16:printf("Duplicated name \"%s\"",inf);break;
 		case 17:printf("Undefined structure \"%s\"",inf);break;
+//		case 71:printf("71\n");break;
+//		case 72:printf("72\n");break;
+//		case 73:printf("73\n");break;
+//		case 74:printf("74\n");break;
 	}
 	printf("\n");
 }

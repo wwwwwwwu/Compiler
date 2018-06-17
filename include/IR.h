@@ -93,8 +93,9 @@ Operand new_temp()
 {
 	Operand p=malloc(sizeof(struct Operand_));
 	p->kind=OP_TEMP;
-	p->var_no=nowtemp;
 	nowtemp++;
+	//printf("%dkkkkkkkkk\n",nowtemp);
+	p->var_no=nowtemp-1;
 	return p;
 }
 
@@ -850,12 +851,12 @@ CodesPointer translate_tree(syntax_node *p)
 		return NULL;
 	}
 	if (strcmp(p->symbol,"Exp")==0)
-	{printf("11\n");
+	{
 		Operand t=new_temp();
 		return translate_exp(p,t);
 	}
 	else if (strcmp(p->symbol,"Stmt")==0)
-	{printf("12\n");
+	{
 		return translate_stmt(p);
 	}
 	else if (strcmp(p->symbol,"Dec")==0)
@@ -866,20 +867,20 @@ CodesPointer translate_tree(syntax_node *p)
 		return translate_assign(p,t);
 	}
 	else if (strcmp(p->symbol,"VarDec")==0)
-	{printf("14\n");
+	{
 		Operand t=new_temp();
 		return translate_vardec(p,t);
 	}
 	else if (strcmp(p->symbol,"FunDec")==0)
-	{printf("15\n");
+	{
 		return translate_fundec(p);
 	}
 	else if (strcmp(p->symbol,"StructSpecifier")==0)
-	{printf("16\n");
+	{
 		return NULL;
 	}
 	else
-	{printf("17\n");
+	{
 		int i=0;
 		for (;i<p->nr_child;i++)
 		{
