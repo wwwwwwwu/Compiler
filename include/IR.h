@@ -17,6 +17,8 @@
 	{\
 		ret=new_cp(new_jump_code(NULL,k,t,t1,t2));\
 	}
+static int nowtemp=0;
+static int nowlabel=0;
 extern FILE* outfile;
 typedef struct Operand_* Operand;
 typedef int Label;
@@ -28,7 +30,7 @@ struct Operand_
 		Label label_no;
 		int int_value;
 		float float_value;
-		symbol_entry* sym;
+		struct symboltype* sym;
 		Type arr_type;
 	};
 };
@@ -63,6 +65,7 @@ struct CodesPointer_
 };
 
 //----------------------------------------------------
+static Operand opd_zero=NULL,opd_one=NULL;
 Operand new_int(int i)
 {
 	Operand p=malloc(sizeof(struct Operand_));
@@ -96,10 +99,33 @@ Operand new_temp()
 	return p;
 }
 
-Operand new_var(symboltype* s)
+enum IC_relop get_relop(char *s)
 {
-	Operand p=malloc(sizeof(struct Operand_));
-	if (s->kind==VARIABLE)
+	if (s[0]=='=')
+	{
+		return EQUAL;
+	}
+	else if (s[0]=='>')
+	{
+		if (s[1]=='\0')
+			return MORE;
+		else
+			return NOLESS;
+	}
+	else if (s[0]=='<')
+	{
+		if (s[1]=='\0')
+			return LESS;
+		else
+			return NOGREATER;
+	}
+	else
+		return NOTEQ;
+}
+
+void change2var(Operand p,struct symboltype *s)
+{
+	if (s->kind==VARIBLE)
 	{
 		if (s->type->kind==BASIC)
 			p->kind=OP_VARIABLE;
@@ -110,49 +136,6 @@ Operand new_var(symboltype* s)
 	}
 	else if (s->kind==FUNCTION)
 		p->kind=OP_FUNC;
-	else if (s->kind==PARADDR)
-		p->kind=OP_VARIABLE;
-	p->sym=s;
-	return p;
-}
-Operand new_arr(Type s)
-{
-	Operand p=malloc(sizeof(struct Operand_));
-	p->kind=OP_VARIABLE;
-	p->arr_type=s;
-	return p;
-}
-void change2arr(Operand p,Type s)
-{
-	p->kind=OP_VARIABLE;
-	p->arr_type=s;
-}
-Operand new_addrtemp(int s)
-{
-	Operand p=new_temp();
-	p->kind=OP_ADDRESS;
-	return p;
-}
-void change2addrtemp(Operand p)
-{
-	p->kind=OP_ADDRESS;
-}
-
-void change2var(Operand p,symboltype *s)
-{
-	if (s->kind==VARIABLE)
-	{
-		if (s->type->kind==BASIC)
-			p->kind=OP_VARIABLE;
-		else if (s->type->kind==FUN)
-			p->kind=OP_FUNC;
-		else
-			p->kind=OP_ADDRVAR;
-	}
-	else if (s->kind==FUNCTION)
-		p->kind=OP_FUNC;
-	else if (s->kind==PARADDR)
-		p->kind=OP_VARIABLE;
 	p->sym=s;
 }
 int new_label()
@@ -169,10 +152,388 @@ Operand new_labelopd()
 	p->label_no=new_label();
 	return p;
 }
+CodesPointer merge_cp(CodesPointer p1,CodesPointer p2)
+{
+	if (p1==NULL)
+	{
+		return p2;
+	}
+	if (p2==NULL)
+	{
+		return p1;
+	}
+	p1->lastnode->next=p2->firstnode;
+	p2->firstnode->prev=p1->lastnode;
+	p1->lastnode=p2->lastnode;
+	free(p2);
+	return p1;
+}
+CodesPointer new_cp(InterCodes ics)
+{
+	CodesPointer p=malloc(sizeof(struct CodesPointer_));
+	p->firstnode=p->lastnode=ics;
+	return p;
+}
 
+Operand new_var(struct symboltype* s)
+{
+	Operand p=malloc(sizeof(struct Operand_));
+	if (s->kind==VARIBLE)
+	{
+		if (s->type->kind==BASIC)
+			p->kind=OP_VARIABLE;
+		else if (s->type->kind==FUNC)
+			p->kind=OP_FUNC;
+		else
+			p->kind=OP_ADDRVAR;
+	}
+	else if (s->kind==FUNCTION)
+		p->kind=OP_FUNC;
+	else if (s->kind==PARADDR)
+		p->kind=OP_VARIABLE;
+	p->sym=s;
+	return p;
+}
+
+InterCodes new_exp_code(InterCodes pr,enum IC_kind kind,Operand target,Operand op1,Operand op2)
+{
+	InterCodes p=malloc(sizeof(struct InterCodes_));
+	if (pr!=NULL)
+	{
+		pr->next=p;
+	}
+	p->prev=pr;
+	p->next=NULL;
+	p->code.kind=kind;
+	p->code.binop.target=target;
+	p->code.binop.op1=op1;
+	p->code.binop.op2=op2;
+	return p;
+}
+InterCodes new_jump_code(InterCodes pr,enum IC_relop relop,Operand target,Operand op1,Operand op2)
+{
+	InterCodes p=malloc(sizeof(struct InterCodes_));
+	if (pr!=NULL)
+	{
+		pr->next=p;
+	}
+	p->prev=pr;
+	p->next=NULL;
+	p->code.kind=IC_IF;
+	p->code.jump.target=target;
+	p->code.jump.op1=op1;
+	p->code.jump.op2=op2;
+	p->code.jump.relop=relop;
+	return p;
+}
+CodesPointer get_straddr(syntax_node *p,Operand t);
+CodesPointer get_addr(syntax_node *p,Operand t,Type *type);
 
 CodesPointer translate_exp(syntax_node *p,Operand t);
+CodesPointer translate_logic(syntax_node *p,Operand t);
+CodesPointer translate_cond(syntax_node *p,Operand ltrue,Operand lfalse);
+CodesPointer translate_assign(syntax_node *p,Operand t);
+CodesPointer translate_dot(syntax_node *p,Operand t);
+CodesPointer translate_arith_exp(syntax_node *p,enum IC_kind ic_kind,Operand t);
+CodesPointer translate_call(syntax_node *p,Operand t);
+CodesPointer translate_arr(syntax_node *p,Operand t);
+CodesPointer translate_tree(syntax_node *p);
 
+CodesPointer translate_arr(syntax_node *p,Operand t)
+{
+	CodesPointer ret=NULL;
+	Operand t1=new_temp();
+	Type temp;
+	ret=get_addr(p,t1,&temp);
+	NEW_CODE(ret,IC_GETVAL,t,t1,NULL);
+	return ret;
+}
+CodesPointer translate_call(syntax_node *p,Operand t)
+{
+	syntax_node *q=p->child[0];
+	CodesPointer ret=NULL;
+	if (strcmp(q->inf,"read")==0)
+	{
+		NEW_CODE(ret,IC_READ,t,NULL,NULL);
+		return ret;
+	}
+	else if (strcmp(q->inf,"write")==0)
+	{
+		Operand t1=new_temp();
+		q=p->child[2]->child[0];
+		ret=translate_exp(q,t1);
+		NEW_CODE(ret,IC_WRITE,t1,NULL,NULL);
+		change2int(t,1);
+		return ret;
+	}
+	Operand t1=new_var(find_symbol(q->inf));
+	if (p->nr_child==4)
+	{
+		CodesPointer args_code=NULL;
+		ret=merge_cp(ret,translate_args(p->child[2],&args_code));
+		ret=merge_cp(ret,args_code);
+	}
+	NEW_CODE(ret,IC_CALL,t,t1,NULL);
+	return ret;
+}
+
+CodesPointer translate_arith_exp(syntax_node *p,enum IC_kind ic_kind,Operand t)
+{
+	Operand t1=new_temp();
+	Operand t2=new_temp();
+	CodesPointer ret1=translate_exp(p->child[0],t1);
+	CodesPointer ret2=translate_exp(p->child[2],t2);
+	if (t1->kind==OP_INT&&t2->kind==OP_INT)
+	{
+		t->kind=OP_INT;
+		switch(ic_kind)
+		{
+			case IC_ADD:t->int_value=t1->int_value+t2->int_value;break;
+			case IC_SUB:t->int_value=t1->int_value-t2->int_value;break;
+			case IC_MUL:t->int_value=t1->int_value*t2->int_value;break;
+			case IC_DIV:t->int_value=t1->int_value/t2->int_value;break;			
+		}
+		free(t1);
+		free(t2);
+		return NULL;
+	}
+	else if (t1->kind==OP_FLOAT&&t2->kind==OP_FLOAT)
+	{
+		t->kind=OP_FLOAT;
+		switch(ic_kind)
+		{
+			case IC_ADD:t->float_value=t1->float_value+t2->float_value;break;
+			case IC_SUB:t->float_value=t1->float_value-t2->float_value;break;
+			case IC_MUL:t->float_value=t1->float_value*t2->float_value;break;
+			case IC_DIV:t->float_value=t1->float_value/t2->float_value;break;			
+		}
+		free(t1);
+		free(t2);
+		return NULL;
+	}
+	else if (t1->kind==OP_INT&&t1->int_value==0&&(ic_kind==IC_ADD))
+	{
+		t->kind=t2->kind;
+		t->int_value=t2->int_value;
+		return ret2;
+	}
+	else if (t2->kind==OP_INT&&t2->int_value==0&&(ic_kind==IC_ADD||ic_kind==IC_SUB))
+	{
+		t->kind=t1->kind;
+		t->int_value=t1->int_value;
+		return ret1;
+	}
+	else if (t1->kind==OP_INT&&t1->int_value==1&&(ic_kind==IC_MUL))
+	{
+		t->kind=t2->kind;
+		t->int_value=t2->int_value;
+		return ret2;
+	}
+	else if (t2->kind==OP_INT&&t2->int_value==1&&(ic_kind==IC_MUL||ic_kind==IC_DIV))
+	{
+		t->kind=t1->kind;
+		t->int_value=t1->int_value;
+		return ret1;
+	}
+	else
+	{
+		CodesPointer ret=merge_cp(ret1,ret2);
+		NEW_CODE(ret,ic_kind,t,t1,t2);
+		return ret;
+	}
+}
+CodesPointer get_addr(syntax_node *p,Operand t,Type *type)
+{
+	if (p->nr_child==3)
+	{
+		*type=analysis_exp(p);
+		return get_straddr(p,t);
+	}
+	syntax_node *q1=p->child[0];
+	CodesPointer ret=NULL;
+	Operand t1,t2,t3;
+	if (p->nr_child==1)
+	{
+		struct symboltype *s=find_symbol(q1->inf);
+		change2var(t,s);
+		*type=s->type;
+		return ret;
+	}
+	t1=new_temp();
+	t2=new_temp();
+	t3=new_temp();
+	syntax_node *q2=p->child[2];
+	CodesPointer offcode=translate_exp(q2,t3);
+	ret=get_addr(q1,t1,type);
+	Operand ts=new_int(get_size((*type)->array.elem));
+	if (t3->kind==OP_INT)
+	{
+		change2int(t2,t3->int_value*ts->int_value);
+		free(t3);
+		free(ts);
+	}
+	else
+	{
+		NEW_CODE(offcode,IC_MUL,t2,t3,ts);
+	}
+	ret=merge_cp(ret,offcode);
+	if (t2->kind==OP_INT&&t2->int_value==0)
+	{
+		t->kind=t1->kind;
+		t->int_value=t1->int_value;
+		free(t2);
+		*type=(*type)->array.elem;
+		return ret;
+	}
+	NEW_CODE(ret,IC_ADD,t,t1,t2);
+	*type=(*type)->array.elem;
+	return ret;
+
+}
+
+CodesPointer get_straddr(syntax_node *p,Operand t)
+{
+	Operand t1=new_temp();
+	CodesPointer ret=NULL;	
+	syntax_node *q=p->child[0];
+	Type type=analysis_exp(q);
+	int r=get_structoff(type,p->child[2]->inf);
+	if (r!=0)
+	{
+		Type temp;
+		ret=get_addr(q,t1,&temp);
+		Operand t2=new_int(r);	
+		NEW_CODE(ret,IC_ADD,t,t1,t2)
+		change2addrtemp(t);
+		return ret;
+	}
+	else
+	{
+		Type temp;
+		ret=get_addr(q,t,&temp);
+		return ret;
+	}
+}
+CodesPointer translate_dot(syntax_node *p,Operand t)
+{
+	CodesPointer ret=NULL;
+	Operand t1=new_temp();
+	ret=get_straddr(p,t1);
+	NEW_CODE(ret,IC_GETVAL,t,t1,NULL);
+	return ret;
+}
+CodesPointer translate_assign(syntax_node *p,Operand t)
+{
+	CodesPointer ret=NULL;
+	if (strcmp(p->child[0]->symbol,"ID")==0)
+	{
+		Operand t1=new_var(find_symbol(p->child[0]->inf));
+		Operand t2=new_temp();
+		ret=merge_cp(ret,translate_exp(p->child[2],t2));
+		NEW_CODE(ret,IC_ASSIGN,t1,t2,NULL);
+		change2var(t,t1->sym);
+		return ret;
+	}
+	else if (p->nr_child==4)
+	{
+		Operand t1=new_temp();
+		Operand t2=new_temp();
+		Type temp;
+		ret=get_addr(p,t1,&temp);
+		ret=merge_cp(ret,translate_exp(p->child[2],t2));
+		NEW_CODE(ret,IC_ADDRVAL,t1,t2,NULL);
+		t->kind=t2->kind;
+		t->int_value=t2->int_value;
+		return ret;
+	}
+	else if (p->nr_child==3)
+	{
+		Operand t1=new_temp();
+		Operand t2=new_temp();
+		ret=get_straddr(p,t1);
+		ret=merge_cp(ret,translate_exp(p->child[2],t2));
+		NEW_CODE(ret,IC_ADDRVAL,t1,t2,NULL);
+		t->kind=t2->kind;
+		t->int_value=t2->int_value;
+		return ret;
+	}
+}
+
+CodesPointer translate_cond(syntax_node *p,Operand ltrue,Operand lfalse)
+{
+	syntax_node *q=p->child[0];
+	if (p->nr_child==3&&strcmp(q->symbol,"LP")==0)
+	{
+		return translate_cond(p->child[1],ltrue,lfalse);
+	}
+	else if (p->nr_child==2&&strcmp(q->symbol,"NOT")==0)
+	{
+		return translate_cond(p->child[1],lfalse,ltrue);
+	}
+	else if (p->nr_child==3&&strcmp(q->symbol,"Exp")==0)
+	{
+		syntax_node *p2=p->child[1];
+		if (strcmp(p2->symbol,"RELOP")==0)
+		{
+			Operand t1=new_temp();
+			Operand t2=new_temp();
+			CodesPointer code1,code2;
+			code1=translate_exp(q,t1);
+			code2=translate_exp(p->child[2],t2);
+			enum IC_relop r=get_relop(p2->inf);
+			code1=merge_cp(code1,code2);
+			NEW_JUMP(code1,r,ltrue,t1,t2);
+			NEW_CODE(code1,IC_GOTO,lfalse,NULL,NULL);
+			return code1;
+		}
+		else if (strcmp(p2->symbol,"AND")==0)
+		{
+			Operand l1=new_labelopd();
+			CodesPointer code1,code2;
+			code1=translate_cond(q,l1,lfalse);
+			code2=translate_cond(p->child[2],ltrue,lfalse);
+			NEW_CODE(code1,IC_LABEL,l1,NULL,NULL);
+			code1=merge_cp(code1,code2);
+			return code1;
+		}
+		else if (strcmp(p2->symbol,"OR")==0)
+		{
+			Operand l1=new_labelopd();
+			CodesPointer code1,code2;
+			code1=translate_cond(q,ltrue,l1);
+			code2=translate_cond(p->child[2],ltrue,lfalse);
+			NEW_CODE(code1,IC_LABEL,l1,NULL,NULL);
+			code1=merge_cp(code1,code2);
+			return code1;
+		}
+	}
+	Operand t1=new_temp();
+	CodesPointer code1,code2;
+	code1=translate_exp(p,t1);
+	Operand t2=opd_zero;
+	NEW_JUMP(code1,NOTEQ,ltrue,t1,t2);
+	NEW_CODE(code1,IC_GOTO,lfalse,NULL,NULL);
+	return code1;
+}
+CodesPointer translate_logic(syntax_node *p,Operand t)
+{
+	Operand t1,t2,t3,int1,int0;
+	t1=new_labelopd();
+	t2=new_labelopd();
+	t3=new_labelopd();
+	int1=opd_one;
+	int0=opd_zero;
+	CodesPointer code1=NULL,code2=NULL,code3=NULL,ret=NULL;
+	code1=translate_cond(p,t1,t2);
+	NEW_CODE(code2,IC_ASSIGN,t,int1,NULL);
+	NEW_CODE(code3,IC_ASSIGN,t,int0,NULL);
+	NEW_CODE(code1,IC_LABEL,t1,NULL,NULL);
+	NEW_CODE(code2,IC_GOTO,t3,NULL,NULL);
+	NEW_CODE(code2,IC_LABEL,t2,NULL,NULL);
+	NEW_CODE(code3,IC_LABEL,t3,NULL,NULL);
+	code1=merge_cp(code1,code2);
+	return merge_cp(code1,code3);
+} 
 
 CodesPointer translate_exp(syntax_node *p,Operand t) 
 {
@@ -192,7 +553,7 @@ CodesPointer translate_exp(syntax_node *p,Operand t)
 		}
 		else
 		{
-			symboltype* s=find_symbol(q->inf);
+			struct symboltype* s=find_symbol(q->inf);
 			change2var(t,s);
 			return NULL;
 		}
@@ -221,7 +582,7 @@ CodesPointer translate_exp(syntax_node *p,Operand t)
 			}
 			else
 			{
-				NEW_CODE(ret,IC_SUB,t,get_zero(),t1);
+				NEW_CODE(ret,IC_SUB,t,opd_zero,t1);
 			}
 			return ret;
 		}
@@ -295,4 +656,24 @@ CodesPointer translate_exp(syntax_node *p,Operand t)
 	}	
 }
 
+CodesPointer translate_tree(syntax_node *p)
+{
+	CodesPointer ret=NULL;
+	if (p==NULL)
+	{
+		return NULL;
+	}
+	if (strcmp(p->symbol,"Exp")==0)
+	{
+		Operand t=new_temp();
+		return translate_exp(p,t);
+	}
+
+}
+void begin_translate(syntax_node *p)
+{
+	opd_zero=new_int(0);
+	opd_one=new_int(1);
+	translate_tree(p);
+}
 #endif

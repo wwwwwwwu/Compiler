@@ -6,7 +6,7 @@
 #include "syntaxtree.h"
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
-enum symbolkind {VARIBLE,FUNCTION,STRUCTURE};
+enum symbolkind {VARIBLE,FUNCTION,STRUCTURE,PARADDR};
 struct Type_{
 	enum {BASIC, ARRAY, STRUC, FUNC} kind;
 	union{
@@ -42,7 +42,6 @@ void symbol_init(){
 }
 
 int insert_symbol(struct symboltype* a){
-print_symbol();
 	if(find_symbol(a->name)!=NULL)return 0;
 	tail->next=a;
 	tail=tail->next;
@@ -100,6 +99,25 @@ int type_equal(Type t1,Type t2)
 		}
 	}
 	return 0;
+}
+int get_size(Type a)
+{
+	if (a->kind==BASIC)
+	{
+		return 4;
+	}
+	else if (a->kind==ARRAY)
+	{
+		return a->array.size*get_size(a->array.elem);
+	}
+	else if (a->kind==STRUCTURE)
+	{
+		FieldList p=a->structure;
+		int  ret=0;
+		for (;p!=NULL;p=p->tail)
+			ret+=get_size(p->type);
+		return ret;
+	}
 }
 /*
 

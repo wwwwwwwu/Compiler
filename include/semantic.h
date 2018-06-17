@@ -222,7 +222,10 @@ Type def_func(syntax_node *p,Type t)
 			struct symboltype* s=malloc(sizeof(struct symboltype));
 			strcpy(s->name,i->name);
 			s->type=i->type;
-			s->kind=VARIBLE;
+			if(s->type->kind!=BASIC&&(s->type->basic!=1||s->type->basic!=0))
+				s->kind=VARIBLE;
+			else
+				s->kind=PARADDR;
 			int ret=insert_symbol(s);
 			if(ret==0)print_error(3,p->child[0]->lineno,i->name);
 		}
@@ -611,7 +614,7 @@ Type analysis_exp(syntax_node *p)
 		else
 		{
 			struct symboltype* pp=find_symbol(q->inf);
-			if (pp==NULL||pp->kind!=VARIBLE)
+			if (pp==NULL||(pp->kind!=VARIBLE&&pp->kind!=PARADDR))
 			{
 				print_error(1,q->lineno,q->inf);
 				return NULL;
