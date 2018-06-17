@@ -1,7 +1,8 @@
 #include <stdio.h>
 FILE *outfile;
 int main(int argc,char **argv){
-	if (argc <= 1) {
+	if (argc != 3 ) {
+		printf("input error\n");
 		return 1;
 	}
 	FILE *f =fopen(argv[1],"r");
