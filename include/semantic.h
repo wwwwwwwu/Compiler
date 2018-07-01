@@ -224,8 +224,6 @@ Type def_func(syntax_node *p,Type t)
 			s->type=i->type;
 			if(s->type->kind!=BASIC&&(s->type->basic!=1||s->type->basic!=0))
 				s->kind=VARIBLE;
-			else
-				s->kind=PARADDR;
 			int ret=insert_symbol(s);
 			if(ret==0)print_error(3,p->child[0]->lineno,i->name);
 		}
@@ -420,7 +418,7 @@ Type lvalue_exp(syntax_node *p)
 	if (p->nr_child==1&&strcmp(q->symbol,"ID")==0)
 	{
 		struct symboltype* pp=find_symbol(q->inf);
-		if (pp==NULL||(pp->kind!=VARIBLE&&pp->kind!=PARADDR))
+		if (pp==NULL||pp->kind!=VARIBLE)
 		{
 			print_error(1,q->lineno,q->inf);
 			return NULL;
@@ -599,17 +597,23 @@ int match_args(syntax_node* p,FieldList flp)
 	{
 		return 0;
 	}
-	for(int i=0;i<p->nr_child;i+=2){
-		if(flp==NULL)return 0;
-		Type t=analysis_exp(p->child[i]);
-		if (type_equal(t,flp->type)==0)
+	Type t=analysis_exp(p->child[0]);
+	if (t==NULL)
+		return 0;
+	if (type_equal(t,flp->type)==0)
+	{
+		return 0;
+	}
+	if (p->nr_child==1)
+	{
+		if (flp->tail!=NULL)
 		{
 			return 0;
 		}
-		if (flp->tail!=NULL)return 0;
-		flp=flp->tail;
+		else
+			return 1;
 	}
-	return 1;
+	return match_args(p->child[2],flp->tail);
 }
 
 Type analysis_exp(syntax_node *p)
@@ -632,7 +636,7 @@ Type analysis_exp(syntax_node *p)
 		else
 		{
 			struct symboltype* pp=find_symbol(q->inf);
-			if (pp==NULL||(pp->kind!=VARIBLE&&pp->kind!=PARADDR))
+			if (pp==NULL||pp->kind!=VARIBLE)
 			{
 				print_error(1,q->lineno,q->inf);
 				return NULL;

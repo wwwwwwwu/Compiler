@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "syntaxtree.h"
+static int total_var_no;
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
-enum symbolkind {VARIBLE,FUNCTION,STRUCTURE,PARADDR};
+enum symbolkind {VARIBLE,FUNCTION,STRUCTURE};
 struct Type_{
 	enum {BASIC, ARRAY, STRUC, FUNC} kind;
 	union{
@@ -91,6 +92,7 @@ int insert_symbol(struct symboltype* a){
 	tail->no=No;
 	No++;
 	tail->next=NULL;
+	total_var_no=No;
 	return 1;
 }
 void print_symbol(){

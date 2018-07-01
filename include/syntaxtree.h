@@ -15,7 +15,7 @@ typedef struct syntax_tree_node {
 		float float_val;
 		char inf[256];
 	};
-	struct syntax_tree_node* child[10];
+	struct syntax_tree_node* child[20];
 }syntax_node;
 
 

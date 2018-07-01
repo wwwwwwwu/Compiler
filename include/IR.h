@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "semantic.h"
+
+#include "head.h"
 #define NEW_CODE(ret,k,t,t1,t2) \
 	if (ret!=NULL)\
 		ret->lastnode=new_exp_code(ret->lastnode,k,t,t1,t2);\
@@ -20,50 +22,8 @@
 static int nowtemp=0;
 static int nowlabel=0;
 extern FILE* outfile;
-typedef struct Operand_* Operand;
-typedef int Label;
-struct Operand_
-{
-	enum {OP_VARIABLE,OP_INT,OP_FLOAT,OP_ADDRESS,OP_ARRAY,OP_STRUCTURE,OP_TEMP,OP_FUNC,OP_LABEL,OP_ADDRVAR} kind;
-	union {
-		int var_no;
-		Label label_no;
-		int int_value;
-		float float_value;
-		struct symboltype* sym;
-		Type arr_type;
-	};
-};
-enum IC_kind {	IC_LABEL,IC_FUNCTION,IC_ASSIGN,IC_ADD,IC_SUB,IC_MUL,
-		IC_DIV,IC_GETADDR,IC_GETVAL,IC_ADDRVAL,IC_GOTO,IC_IF,
-		IC_RETURN,IC_DEC,IC_ARG,IC_ARGADDR,IC_CALL,IC_PARAM,IC_READ,IC_WRITE};
-enum IC_relop {MORE,LESS,NOGREATER,NOLESS,EQUAL,NOTEQ};
-typedef struct InterCode_
-{
-	enum IC_kind kind;
-	union {
-		struct {Operand target,op1,op2;} binop;
-		struct {
-			Operand target; 
-			Operand op1,op2;
-			enum IC_relop relop;
-		}jump;
-	};
-}InterCode;
-
-typedef struct InterCodes_* InterCodes;
-struct InterCodes_
-{
-	InterCode code;
-	struct InterCodes_ *prev,*next;
-};
-
-typedef struct CodesPointer_* CodesPointer;
-struct CodesPointer_
-{
-	InterCodes firstnode,lastnode;
-};
-
+static int total_temp;
+static InterCodes MIP;
 //----------------------------------------------------
 static Operand opd_zero=NULL,opd_one=NULL;
 Operand new_int(int i)
@@ -96,6 +56,7 @@ Operand new_temp()
 	p->kind=OP_TEMP;
 	nowtemp++;
 	p->var_no=nowtemp-1;
+	total_temp=nowtemp;
 	return p;
 }
 
@@ -125,7 +86,7 @@ enum IC_relop get_relop(char *s)
 
 void change2var(Operand p,struct symboltype *s)
 {
-	if (s->kind==VARIBLE||s->kind==PARADDR)
+	if (s->kind==VARIBLE)
 	{
 		if (s->type->kind==BASIC){
 			p->kind=OP_VARIABLE;}
@@ -193,8 +154,6 @@ Operand new_var(struct symboltype* s)
 	}
 	else if (s->kind==FUNCTION)
 		p->kind=OP_FUNC;
-	else if (s->kind==PARADDR)
-		p->kind=OP_VARIABLE;
 	p->sym=s;
 	return p;
 }
@@ -1079,6 +1038,7 @@ void begin_translate(syntax_node *p)
 	opd_zero=new_int(0);
 	opd_one=new_int(1);
 	CodesPointer t=translate_tree(p);
-	fprint_codes(t->firstnode,outfile);
+	//fprint_codes(t->firstnode,outfile);
+	MIP=t->firstnode;
 }
 #endif
